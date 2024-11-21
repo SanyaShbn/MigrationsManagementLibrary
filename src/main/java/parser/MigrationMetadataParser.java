@@ -10,9 +10,7 @@ public class MigrationMetadataParser {
                 String[] tokens = line.split("--");
                 for (String token : tokens) {
                     token = token.trim();
-                    if (token.startsWith("v")) {
-                        metadata.setVersion(token);
-                    } else if (!token.isEmpty()) {
+                    if (!token.isEmpty()) {
                         if (metadata.getInstalledBy() == null) {
                             metadata.setInstalledBy(token);
                         } else {

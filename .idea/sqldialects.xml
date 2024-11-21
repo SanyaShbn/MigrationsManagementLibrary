@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/src/main/java/processor/MigrationFileProcessor.java" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/src/test/java/MigrationFileProcessorIntegrationTest.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/executor/MigrationExecutor.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/utils/MigrationManager.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/java/MigrationExecutorTest.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/java/MigrationManagerTest.java" dialect="GenericSQL" />
   </component>
 </project>
