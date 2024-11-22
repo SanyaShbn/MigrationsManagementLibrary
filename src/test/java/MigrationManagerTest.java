@@ -38,7 +38,9 @@ public class MigrationManagerTest {
 
     @Test
     void testFindAndSortMigrationFiles() {
-        when(migrationFileReader.findDbMigrationFiles(anyString())).thenReturn(List.of(new File("V1__init.sql"), new File("V2__update.sql")));
+        when(migrationFileReader.findDbMigrationFiles(anyString())).thenReturn(List.of(
+                new File("src/test/resources/db/V1__init.sql"),
+                new File("src/test/resources/db/V2__update.sql")));
 
         List<File> files = migrationManager.findAndSortMigrationFiles("src/test/resources/db");
 
@@ -51,23 +53,23 @@ public class MigrationManagerTest {
         when(connection.createStatement()).thenReturn(statement);
         when(statement.executeQuery(anyString())).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
-        when(resultSet.getString("version")).thenReturn("V1");
+        when(resultSet.getInt(1)).thenReturn(1);
 
-        String currentVersion = migrationManager.getCurrentVersion(connection);
+        Integer currentVersion = migrationManager.getCurrentVersion(connection);
 
-        assertEquals("V1", currentVersion);
+        assertEquals(1, currentVersion);
     }
 
     @Test
     void testShouldApplyMigration() {
-        assertTrue(migrationManager.shouldApplyMigration(null, "V1"));
-        assertTrue(migrationManager.shouldApplyMigration("V1", "V2"));
-        assertFalse(migrationManager.shouldApplyMigration("V2", "V1"));
+        assertTrue(migrationManager.shouldApplyMigration(null, 1));
+        assertTrue(migrationManager.shouldApplyMigration(1, 2));
+        assertFalse(migrationManager.shouldApplyMigration(2, 1));
     }
 
     @Test
     void testExtractVersionFromFilename() {
-        String version = migrationManager.extractVersionFromFilename(new File("V1__init.sql"));
-        assertEquals("1", version);
+        Integer version = migrationManager.extractVersionFromFilename(new File("V1__init.sql"));
+        assertEquals(1, version);
     }
 }

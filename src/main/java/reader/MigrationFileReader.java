@@ -1,6 +1,7 @@
 package reader;
 
 import lombok.extern.slf4j.Slf4j;
+import utils.Validator;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +13,8 @@ import java.util.List;
 
 @Slf4j
 public class MigrationFileReader implements FileReader{
+
+    //Метод для поиска .sql файлов в ресурсах
     @Override
     public List<File> findDbMigrationFiles(String path) {
         List<File> migrationFiles = new ArrayList<>();
@@ -30,12 +33,16 @@ public class MigrationFileReader implements FileReader{
         return migrationFiles;
     }
 
+    //Чтение содержимого каждого файла
     @Override
     public List<String> readDbMigrationFile(File file) {
+        Validator.checkFileExists(file);
         try {
-            return Files.readAllLines(Paths.get(file.getAbsolutePath()));
+            String content = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
+            return Arrays.asList(content);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
 }

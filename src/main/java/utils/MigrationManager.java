@@ -30,22 +30,25 @@ public class MigrationManager {
     }
 
     private void validateFileFormat(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("No migration files found in the path");
+        }
+
         for (File file : files) {
-            if (!file.getName().matches("V[0-9]+__.*\\.sql")) {
-                throw new IllegalArgumentException("Invalid migration file format: " + file.getName());
-            }
+            Validator.checkFileExists(file);
+            Validator.checkFileFormat(file);
         }
     }
 
-    public String getCurrentVersion(Connection connection) {
+    //Получение текущей версии БД (пока просто наибольшее число в колонке version у schema_history_table)
+    public Integer getCurrentVersion(Connection connection) {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
                      """
-                            SELECT version FROM schema_history_table
-                            ORDER BY installed_on DESC LIMIT 1
+                            SELECT MAX(version) FROM schema_history_table
                          """)){
             if (resultSet.next()) {
-                return resultSet.getString("version");
+                return resultSet.getInt(1);
             }
         } catch (SQLException e) {
             log.error("Error retrieving current database version: ", e);
@@ -53,11 +56,14 @@ public class MigrationManager {
         return null;
     }
 
-    public boolean shouldApplyMigration(String currentVersion, String scriptVersion) {
-        return currentVersion == null || scriptVersion.compareTo(currentVersion) > 0;
+    //Сравнение версии миграции и БД
+    public boolean shouldApplyMigration(Integer currentVersion, Integer scriptVersion) {
+        return currentVersion == null || scriptVersion > currentVersion;
     }
 
-    public String extractVersionFromFilename(File file) {
-        return file.getName().split("__")[0].substring(1);
+    //Версия указывается в названии файла, при помощи этого метода считываю ее, чтобы понять,
+    // нужно ли применять данную миграцию еще раз
+    public Integer extractVersionFromFilename(File file) {
+        return Integer.valueOf(file.getName().split("__")[0].substring(1));
     }
 }

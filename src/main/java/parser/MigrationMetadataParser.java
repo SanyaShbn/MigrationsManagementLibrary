@@ -1,5 +1,8 @@
 package parser;
 
+//В качестве метаданных посчитал данные, указываемые в комментариях в .sql файлах
+//В комментариях нужно указывать автора миграции (поле installed_by в schema_history_table)
+//и описание (description)
 public class MigrationMetadataParser {
     public static MigrationMetadata parseMigrationMetadata(String sql) {
         MigrationMetadata metadata = new MigrationMetadata();

@@ -34,6 +34,8 @@ public final class ConnectionManager {
         int size = poolSize == null ? DEFAULT_POOL_SIZE : Integer.parseInt(poolSize);
         pool = new ArrayBlockingQueue<>(size);
 
+        //С использованием рефлексии и Proxy переопределяем для создаваемых в пуле коннектов метод close,
+        // чтобы возвращать коннект обратно в пул и делать его доступным, а не закрывать
         for (int i = 0; i < size; i++){
             Connection connection = open();
             var proxyConnection = (Connection) Proxy.newProxyInstance(ConnectionManager.class.getClassLoader(),
