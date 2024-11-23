@@ -1,4 +1,5 @@
 import executor.MigrationExecutor;
+import parser.RollbackSqlParser;
 import reader.MigrationFileReader;
 import utils.MigrationManager;
 
@@ -7,8 +8,9 @@ public class MigrationLibraryRunner {
     public static void run(){
         MigrationFileReader migrationFileReader = new MigrationFileReader();
         MigrationManager migrationManager = new MigrationManager(migrationFileReader);
-        MigrationExecutor migrationExecutor = new MigrationExecutor(migrationFileReader, migrationManager);
+        RollbackSqlParser rollbackSqlParser = new RollbackSqlParser();
+        MigrationExecutor migrationExecutor = new MigrationExecutor(migrationFileReader, migrationManager,
+                rollbackSqlParser);
         migrationExecutor.processMigrationFiles(DIRECTORY_PATH);
     }
-
 }

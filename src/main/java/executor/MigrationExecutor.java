@@ -3,12 +3,19 @@ package executor;
 import lombok.extern.slf4j.Slf4j;
 import parser.MigrationMetadata;
 import parser.MigrationMetadataParser;
+import parser.RollbackSqlParser;
 import reader.MigrationFileReader;
 import utils.ConnectionManager;
 import utils.MigrationManager;
 import utils.Validator;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -35,6 +42,7 @@ public class MigrationExecutor {
             """;
     private final MigrationFileReader migrationFileReader;
     private final MigrationManager migrationManager;
+    private final RollbackSqlParser rollbackSqlParser;
 
 //Создаю таблицу schema_history_table единожды при загрузке класса
     static {
@@ -44,9 +52,11 @@ public class MigrationExecutor {
             log.error("Error! Failed to create Schema History table: ", e);
         }
     }
-    public MigrationExecutor(MigrationFileReader fileReader, MigrationManager migrationManager) {
+    public MigrationExecutor(MigrationFileReader fileReader, MigrationManager migrationManager,
+                             RollbackSqlParser rollbackSqlParser) {
         this.migrationFileReader = fileReader;
         this.migrationManager = migrationManager;
+        this.rollbackSqlParser = rollbackSqlParser;
     }
 
     //Непосредственно метод-обработчик файлов миграции из ресурсов
@@ -70,14 +80,32 @@ public class MigrationExecutor {
                         log.error("Migration failed, rolling back all changes.");
                         return;
                     }
+                    generateRollbackScripts(sqlCommands, scriptVersion, file.getName());
                 }
             }
             connection.commit();
             log.info("Migration executed successfully");
         } catch (SQLException e) {
             log.error("Error! Failed to process migration files: ", e);
-        }catch (IllegalArgumentException e){
+        }catch (IllegalArgumentException | IOException e){
             log.error(e.getMessage());
+        }
+    }
+
+    private void generateRollbackScripts(List<String> sqlCommands, Integer version, String scriptName)
+            throws IOException {
+        List<String> rollbackScripts = rollbackSqlParser.generateRollbackScript(sqlCommands);
+        Path rollbackDirectory = Paths.get("src", "main", "resources", "db", "rollback");
+        // Создаем директорию, если она не существует
+        String rollbackFileName = rollbackDirectory + "/V" + version + "__rollback_" + scriptName;
+        Path path = Paths.get(String.valueOf(rollbackDirectory)); if (!Files.exists(path)) {
+            Files.createDirectories(path);
+        }
+        try (PrintWriter writer = new PrintWriter(new FileWriter(rollbackFileName))){
+            for (String rollbackCommand : rollbackScripts) {
+                writer.println(rollbackCommand);
+            }
+            log.info("Rollback script generated for version {}: {}", version, rollbackFileName);
         }
     }
 
