@@ -14,6 +14,8 @@ import java.util.List;
 
 @Slf4j
 public class MigrationManager {
+
+    private static final String ROLLBACK_FILE_PATTERN = "U[0-9]+__rollback_V" + "%d" + "__.*\\.sql";
     private final MigrationFileReader migrationFileReader;
 
     public MigrationManager(MigrationFileReader migrationFileReader) {
@@ -36,16 +38,17 @@ public class MigrationManager {
 
         for (File file : files) {
             Validator.checkFileExists(file);
-            Validator.checkFileFormat(file);
+            Validator.checkMigrationFileFormat(file);
         }
     }
 
-    //Получение текущей версии БД (пока просто наибольшее число в колонке version у schema_history_table)
+    // Получение текущей версии БД
     public Integer getCurrentVersion(Connection connection) {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
                      """
-                            SELECT MAX(version) FROM schema_history_table
+                            SELECT MAX(version) FROM schema_history_table WHERE script LIKE 'V%'
+                            AND status = 'applied'
                          """)){
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -56,14 +59,27 @@ public class MigrationManager {
         return null;
     }
 
-    //Сравнение версии миграции и БД
+    // Сравнение версии миграции и БД
     public boolean shouldApplyMigration(Integer currentVersion, Integer scriptVersion) {
         return currentVersion == null || scriptVersion > currentVersion;
     }
 
-    //Версия указывается в названии файла, при помощи этого метода считываю ее, чтобы понять,
+    // Версия указывается в названии файла, при помощи этого метода считываю ее, чтобы понять,
     // нужно ли применять данную миграцию еще раз
     public Integer extractVersionFromFilename(File file) {
         return Integer.valueOf(file.getName().split("__")[0].substring(1));
+    }
+
+    // Поиск конкретного rollback-файла для применения cherryPick rollback-а
+    public File findRollbackFileByVersion(String directoryPath, int scriptVersion) {
+        File dir = new File(directoryPath);
+        String pattern = String.format(ROLLBACK_FILE_PATTERN, scriptVersion);
+        // Поиск файла
+        File[] files = dir.listFiles((dir1, name) -> name.matches(pattern));
+        if (files != null && files.length > 0) {
+            return files[0];
+        } else {
+            return null;
+        }
     }
 }

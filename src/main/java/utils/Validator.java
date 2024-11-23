@@ -49,13 +49,15 @@ public class Validator {
         }
     }
 
-    //Проверка корректности указания имени файла ("V{номер версии}__{имя}.sql")
-    public static void checkFileFormat(File file) {
+    //Проверка корректности указания имени файлов миграции и rollback-ов
+    public static void checkMigrationFileFormat(File file) {
         checkFileExists(file);
-        if (!file.getName().matches("V[0-9]+__.*\\.sql")) {
+        if (!file.getName().matches("V[0-9]+__.*\\.sql") &&
+                !file.getName().matches("U[0-9]+__rollback_V[0-9]+__.*\\.sql")) {
             throw new IllegalArgumentException("Invalid migration file format: " + file.getName());
         }
     }
+
 }
 
 
