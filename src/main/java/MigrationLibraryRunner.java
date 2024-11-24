@@ -1,22 +1,38 @@
 import executor.MigrationExecutor;
-import executor.RollbackExecutor;
 import reader.MigrationFileReader;
 import utils.MigrationManager;
 
 public class MigrationLibraryRunner {
     private static final String MIGRATIONS_DIRECTORY_PATH = "src/main/resources/db/migration";
-    private static final String ROLLBACKS_DIRECTORY_PATH = "src/main/resources/db/rollback";
-    public static void run(){
 
+    public static void run() {
         MigrationFileReader migrationFileReader = new MigrationFileReader();
         MigrationManager migrationManager = new MigrationManager(migrationFileReader);
         MigrationExecutor migrationExecutor = new MigrationExecutor(migrationFileReader, migrationManager);
 
-        migrationExecutor.processMigrationFiles(MIGRATIONS_DIRECTORY_PATH);
+        Runnable migrationTask = () -> {
+            try {
+                migrationExecutor.processMigrationFiles(MIGRATIONS_DIRECTORY_PATH);
+            } catch (Exception e) {
+                System.out.println("Caught exception: " + e.getMessage());
+            }
+        };
 
-        RollbackExecutor rollbackExecutor = new RollbackExecutor(migrationFileReader, migrationManager);
-//        rollbackExecutor.rollbackToVersion(ROLLBACKS_DIRECTORY_PATH, 1);
-//        rollbackExecutor.cherryPickRollback(ROLLBACKS_DIRECTORY_PATH, 2);
+        Thread thread1 = new Thread(migrationTask);
+        Thread thread2 = new Thread(migrationTask);
 
+        thread1.start();
+        thread2.start();
+
+        try {
+            thread1.join();
+            thread2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        run();
     }
 }

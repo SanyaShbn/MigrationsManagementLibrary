@@ -1,8 +1,10 @@
 package executor;
 
+import exception.LockException;
 import lombok.extern.slf4j.Slf4j;
 import parser.MigrationMetadata;
 import parser.MigrationMetadataParser;
+import parser.SqlParser;
 import reader.MigrationFileReader;
 import utils.ConnectionManager;
 import utils.MigrationManager;
@@ -10,17 +12,15 @@ import utils.SchemaHistoryUtil;
 import utils.Validator;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 
 @Slf4j
-public class MigrationExecutor implements Executor{
+public class MigrationExecutor implements Executor {
     private final MigrationFileReader migrationFileReader;
     private final MigrationManager migrationManager;
+    private final SqlParser sqlParser;
 
-//Создаю таблицу schema_history_table единожды при загрузке класса
     static {
         try (Connection connection = ConnectionManager.get()) {
             SchemaHistoryUtil.createSchemaHistoryTable(connection);
@@ -28,54 +28,131 @@ public class MigrationExecutor implements Executor{
             log.error("Error! Failed to create Schema History table: ", e);
         }
     }
+
     public MigrationExecutor(MigrationFileReader fileReader, MigrationManager migrationManager) {
         this.migrationFileReader = fileReader;
         this.migrationManager = migrationManager;
+        this.sqlParser = new SqlParser();
     }
 
-    //Непосредственно метод-обработчик файлов миграции из ресурсов
     public void processMigrationFiles(String directoryPath) {
         List<File> migrationFiles = migrationManager.findAndSortMigrationFiles(directoryPath);
         try (Connection connection = ConnectionManager.get()) {
+            connection.setAutoCommit(false);
 
-            connection.setAutoCommit(false); //для того, чтобы всегда успевать сделать connection.rollback()
-                                             // при необходимости
-
-            int currentVersion = migrationManager.getCurrentVersion(connection); //получаю текущей версии БД
             for (File file : migrationFiles) {
                 List<String> sqlCommands = migrationFileReader.readDbMigrationFile(file);
-
-                //получаю версии файлов миграций для сравнения с версией бд
                 Integer scriptVersion = migrationManager.extractVersionFromFilename(file);
+                Integer currentVersion = migrationManager.getCurrentVersion(connection);
 
                 if (migrationManager.shouldApplyMigration(currentVersion, scriptVersion)) {
-                    if(!executeSql(connection, sqlCommands, file.getName(), scriptVersion)){
-                        connection.rollback(); //откат к предыдущему состоянию при возникновении исключений
-                        log.error("Migration failed, rolling back all changes.");
-                        return;
+                    // Извлечение имен таблиц и проверка наличия колонки is_locked
+                    for (String sql : sqlCommands) {
+                        String tableName = sqlParser.extractTableName(sql);
+                        if (tableName != null) {
+                            ensureIsLockedColumn(connection, tableName);
+
+                            // Проверка блокировки
+                            if (isTableLocked(connection, tableName)) {
+                                throw new LockException("Migration is locked. Another migration is in progress for table " + tableName);
+                            }
+
+                            // Установка блокировки
+                            lockTable(connection, tableName, true);
+                        }
+                    }
+                    try {
+                        if (!executeSql(connection, sqlCommands, file.getName(), scriptVersion)) {
+                            connection.rollback();
+                            log.error("Migration failed, rolling back all changes.");
+                            return;
+                        }
+                        connection.commit();
+                        log.info("Migration executed successfully");
+                    } catch (SQLException | IllegalArgumentException e) {
+                        connection.rollback();
+                        log.error("Error! Failed to process migration files: ", e);
+                        throw e;
+                    } finally {
+                        // Разблокировка таблиц
+                        for (String sql : sqlCommands) {
+                            String tableName = sqlParser.extractTableName(sql);
+                            if (tableName != null) {
+                                lockTable(connection, tableName, false);
+                            }
+                        }
                     }
                 }
             }
-            connection.commit();
-            log.info("Migration executed successfully");
-        } catch (SQLException e) {
+        } catch (SQLException | LockException e) {
             log.error("Error! Failed to process migration files: ", e);
-        }catch (IllegalArgumentException e){
-            log.error(e.getMessage());
+        }
+    }
+
+    private void ensureIsLockedColumn(Connection connection, String tableName) throws SQLException {
+        // Проверка существования таблицы
+        if (!doesTableExist(connection, tableName)) {
+            // Если таблица не существует, откладываем проверку до её создания
+            return;
+        }
+
+        // Проверка наличия колонки is_locked
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet columns = metaData.getColumns(null, null, tableName, "is_locked")) {
+            if (!columns.next()) {
+                String alterTableQuery = "ALTER TABLE " + tableName + " ADD COLUMN is_locked BOOLEAN DEFAULT FALSE";
+                try (PreparedStatement statement = connection.prepareStatement(alterTableQuery)) {
+                    statement.executeUpdate();
+                }
+            }
+        }
+    }
+
+    private boolean doesTableExist(Connection connection, String tableName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet tables = metaData.getTables(null, null, tableName, null)) {
+            return tables.next();
+        }
+    }
+
+    private boolean isTableLocked(Connection connection, String tableName) throws SQLException {
+        if (!doesTableExist(connection, tableName)) {
+            // Если таблица не существует, откладываем проверку до её создания
+            return false;
+        }
+        String query = "SELECT is_locked FROM " + tableName + " WHERE is_locked = TRUE LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    private void lockTable(Connection connection, String tableName, boolean lock) throws SQLException {
+        if (!doesTableExist(connection, tableName)) {
+            // Если таблица не существует, откладываем проверку до её создания
+            return;
+        }
+        String query = lock
+                ? "UPDATE " + tableName + " SET is_locked = TRUE WHERE is_locked = FALSE"
+                : "UPDATE " + tableName + " SET is_locked = FALSE";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.executeUpdate();
         }
     }
 
     @Override
-    public boolean executeSql(Connection connection, List<String> sqlCommands, String script, Integer version) {
+    public boolean executeSql(Connection connection, List<String> sqlCommands, String script, Integer version) throws SQLException {
         try {
             validateExecuteSqlParams(connection, sqlCommands, script, version);
             log.info("Started executing migration");
 
             for (String sql : sqlCommands) {
-                if(!executeSingleMigration(connection, sql, script, version)){
+                if (!executeSingleMigration(connection, sql, script, version)) {
                     return false;
                 }
             }
+
             return true;
         } catch (SQLException | IllegalArgumentException e) {
             log.error("Migration execution failed: ", e);
@@ -83,7 +160,6 @@ public class MigrationExecutor implements Executor{
         }
     }
 
-    //Проверка на null при помощи утилитного класса Validator
     private void validateExecuteSqlParams(Connection connection, List<String> sqlCommands, String script,
                                           Integer version) {
         Validator.checkNotNull(connection);
@@ -91,18 +167,8 @@ public class MigrationExecutor implements Executor{
         Validator.checkNotNull(script, "Script");
         Validator.checkNotNull(version, "Provided db version");
     }
-    //Проверка на null при помощи утилитного класса Validator
-    private void validateUpdateSchemaHistoryTableParams(Connection connection, Integer version, String description,
-                                                String script, String installed_by){
-        Validator.checkNotNull(connection);
-        Validator.checkNotNull(version, "Provided db version");
-        Validator.checkNotNull(script, "Script");
-        Validator.checkNotNullMigrationAuthorAndDescription(installed_by, description);
-    }
 
-    //Выполнение sql-кода отдельного файла миграции
-    private boolean executeSingleMigration(Connection connection, String sql, String script,
-                                           Integer version) throws SQLException {
+    private boolean executeSingleMigration(Connection connection, String sql, String script, Integer version) throws SQLException {
         MigrationMetadata metadata = MigrationMetadataParser.parseMigrationMetadata(sql);
         long startTime = System.currentTimeMillis();
 

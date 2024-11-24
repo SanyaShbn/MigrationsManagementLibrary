@@ -21,8 +21,16 @@ public class SchemaHistoryUtil {
                             );
             """;
 
+    private final static String CREATE_MIGRATION_LOCK_SQL = """
+            CREATE TABLE migration_lock (
+                id SERIAL PRIMARY KEY,
+                is_locked BOOLEAN NOT NULL DEFAULT FALSE
+            );
+            """;
+
     private final static String INSERT_INTO_HISTORY_TABLE_SQL = """
-            INSERT INTO schema_history_table (version, description, script, checksum, installed_by, execution_time, success, status)
+            INSERT INTO schema_history_table (version, description, script, checksum, installed_by, execution_time,
+             success, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
@@ -39,6 +47,14 @@ public class SchemaHistoryUtil {
         Validator.checkNotNull(connection);
         try (Statement statement = connection.createStatement()) {
             statement.execute(CREATE_HISTORY_TABLE_SQL);
+        }
+    }
+
+    public static void createMigrationLockTable(Connection connection) throws SQLException {
+        Validator.checkNotNull(connection);
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(CREATE_MIGRATION_LOCK_SQL);
+            statement.execute("INSERT INTO migration_lock (is_locked) VALUES (FALSE) ON CONFLICT DO NOTHING");
         }
     }
 

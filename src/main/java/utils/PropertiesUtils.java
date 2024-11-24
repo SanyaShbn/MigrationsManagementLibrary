@@ -34,7 +34,7 @@ public final class PropertiesUtils {
             return null;
         }
         Pattern p = Pattern.compile("\\$\\{(\\w+)}|\\$(\\w+)");
-        Matcher m = p.matcher(input); // get a matcher object
+        Matcher m = p.matcher(input);
         StringBuffer sb = new StringBuffer();
         while (m.find()) {
             String envVarName = null == m.group(1) ? m.group(2) : m.group(1);
