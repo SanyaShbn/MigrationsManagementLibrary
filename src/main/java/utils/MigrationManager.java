@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/** *
+ * Utility class for managing migrations and rollbacks
+ * */
 @Slf4j
 public class MigrationManager {
 
@@ -22,6 +25,12 @@ public class MigrationManager {
         this.migrationFileReader = migrationFileReader;
     }
 
+    /** *
+     * Searching for the migration files in given directory
+     *
+     * @param directoryPath the directory path for .sql files
+     * @return list of found files
+     * */
     public List<File> findAndSortMigrationFiles(String directoryPath) {
         List<File> migrationFiles = migrationFileReader.findDbMigrationFiles(directoryPath);
         validateFileFormat(migrationFiles);
@@ -31,18 +40,12 @@ public class MigrationManager {
         return mutableMigrationFiles;
     }
 
-    private void validateFileFormat(List<File> files) {
-        if (files == null || files.isEmpty()) {
-            throw new IllegalArgumentException("No migration files found in the path");
-        }
-
-        for (File file : files) {
-            Validator.checkFileExists(file);
-            Validator.checkMigrationFileFormat(file);
-        }
-    }
-
-    // Получение текущей версии БД
+    /** *
+     * Getting the current database version
+     *
+     * @param connection the directory path for .sql files
+     * @return version's number
+     * */
     public Integer getCurrentVersion(Connection connection) {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
@@ -59,18 +62,34 @@ public class MigrationManager {
         return null;
     }
 
-    // Сравнение версии миграции и БД
+    /** *
+     * Comparing the migration version with the current database version
+     *
+     * @param currentVersion current database version's number
+     * @param scriptVersion scripts version's number (getting form file name)
+     * @return true if current version is less then script version, and false if higher
+     * */
     public boolean shouldApplyMigration(Integer currentVersion, Integer scriptVersion) {
         return currentVersion == null || scriptVersion > currentVersion;
     }
 
-    // Версия указывается в названии файла, при помощи этого метода считываю ее, чтобы понять,
-    // нужно ли применять данную миграцию еще раз
+    /** *
+     * Getting the script's version from .sql files names
+     *
+     * @param file given file to find out it's version
+     * @return version's number
+     * */
     public Integer extractVersionFromFilename(File file) {
         return Integer.valueOf(file.getName().split("__")[0].substring(1));
     }
 
-    // Поиск конкретного rollback-файла для применения cherryPick rollback-а
+    /** *
+     * Finding a specific rollback file to use cherryPick rollback
+     *
+     * @param directoryPath the given directory path for searching the file
+     * @param scriptVersion scripts version's number (getting form file name)
+     * @return found file
+     * */
     public File findRollbackFileByVersion(String directoryPath, int scriptVersion) {
         File dir = new File(directoryPath);
         String pattern = String.format(ROLLBACK_FILE_PATTERN, scriptVersion);
@@ -80,6 +99,17 @@ public class MigrationManager {
             return files[0];
         } else {
             return null;
+        }
+    }
+
+    private void validateFileFormat(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("No migration files found in the path");
+        }
+
+        for (File file : files) {
+            Validator.checkFileExists(file);
+            Validator.checkMigrationFileFormat(file);
         }
     }
 }

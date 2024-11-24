@@ -1,7 +1,6 @@
 package reader;
 
 import lombok.extern.slf4j.Slf4j;
-import utils.Validator;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,10 +10,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static utils.Validator.checkFileExists;
+
+/** *
+ * Provides the realization of FileReader interface methods for analyzing proper directories
+ * and reading migration/rollback files from this directories
+ * */
 @Slf4j
 public class MigrationFileReader implements FileReader{
 
-    //Метод для поиска .sql файлов в ресурсах
+    /** *
+     * Method for searching .sql files in project's resources
+     *
+     * @param path the path to the proper directory
+     * @return list of files from analyzed directory
+     * */
     @Override
     public List<File> findDbMigrationFiles(String path) {
         List<File> migrationFiles = new ArrayList<>();
@@ -33,10 +43,15 @@ public class MigrationFileReader implements FileReader{
         return migrationFiles;
     }
 
-    //Чтение содержимого каждого файла
+    /** *
+     * Method for reading the content of each of the files
+     *
+     * @param file the read file
+     * @return list of strings with sql-commands from the file
+     * */
     @Override
     public List<String> readDbMigrationFile(File file) {
-        Validator.checkFileExists(file);
+        checkFileExists(file);
         try {
             String content = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
             return Arrays.asList(content);

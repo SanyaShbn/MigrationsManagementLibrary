@@ -5,12 +5,26 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** *
+ * Utility class for reading application properties from project's resources
+ * */
 public final class PropertiesUtils {
     private static final Properties PROPERTIES = new Properties();
 
     static {
         loadProperties();
     }
+
+    /** *
+     * Getting certain property by key
+     *
+     * @param key to get property's value
+     * @return string properties value
+     * */
+    public static String get(String key){
+        return PROPERTIES.getProperty(key);
+    }
+
     private static void loadProperties() {
         try (var inputStream = PropertiesUtils.class.getClassLoader()
                 .getResourceAsStream("application.properties")) {
@@ -43,9 +57,6 @@ public final class PropertiesUtils {
         }
         m.appendTail(sb);
         return sb.toString();
-    }
-    public static String get(String key){
-        return PROPERTIES.getProperty(key);
     }
     private PropertiesUtils(){
 

@@ -1,5 +1,4 @@
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Connection;
 
@@ -9,7 +8,7 @@ import utils.ConnectionManager;
 public class ConnectionManagerTest {
 
     @Test
-    public void testGetConnection() throws InterruptedException {
+    public void testGetConnection() {
         Connection connection = ConnectionManager.get();
         assertNotNull(connection);
     }

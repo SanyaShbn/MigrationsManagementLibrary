@@ -4,7 +4,9 @@ import java.io.File;
 import java.sql.Connection;
 import java.util.List;
 
-//Класс для обработки null-значений и пустых значений
+/** *
+ * Utility class for handling null values and empty values
+ * */
 public class Validator {
     public static void checkNotNull(Connection connection) {
         if (connection == null) {
@@ -29,10 +31,15 @@ public class Validator {
         }
     }
 
-    //Проверка наличия нужных комментариев в .sql-файле для записи автора миграции
-    // и описания миграции (комментария к ней) в schema_history_table
-    public static void checkNotNullMigrationAuthorAndDescription(String installed_by, String description) {
-        if (installed_by == null || installed_by.isEmpty()) {
+    /** *
+     * Checking the presence of the necessary metadata in comments for the migration's 'author'
+     * and 'descriptions' fields
+     *
+     * @param installedBy 'installed_by' field value of potential new record in the database
+     * @param description 'description' field value of potential new record in the database
+     * */
+    public static void checkNotNullMigrationAuthorAndDescription(String installedBy, String description) {
+        if (installedBy == null || installedBy.isEmpty()) {
             throw new IllegalArgumentException("Error processing migration files. You must identify the author" +
                     " of the migration in the comments");
         }
@@ -49,7 +56,11 @@ public class Validator {
         }
     }
 
-    //Проверка корректности указания имени файлов миграции и rollback-ов
+    /** *
+     * Checking the correctness of migration files and rollbacks names
+     *
+     * @param file analyzed file
+     * */
     public static void checkMigrationFileFormat(File file) {
         checkFileExists(file);
         if (!file.getName().matches("V[0-9]+__.*\\.sql") &&

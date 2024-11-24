@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/** *
+ * This class is used for providing connections to the database from the connection pool
+ * */
 public final class ConnectionManager {
 
     private static final String URL_KEY = "db.url";
@@ -19,6 +22,19 @@ public final class ConnectionManager {
     static {
         loadDriver();
         initConnectionPool();
+    }
+
+    /** *
+     * Getting the connection from the pool
+     *
+     * @return Connection object
+     * */
+    public static Connection get(){
+        try {
+            return pool.take();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void loadDriver() {
@@ -43,14 +59,6 @@ public final class ConnectionManager {
                     (proxy, method, args) -> method.getName().equals("close") ?
                             pool.add((Connection) proxy) : method.invoke(connection, args));
             pool.add(proxyConnection);
-        }
-    }
-
-    public static Connection get(){
-        try {
-            return pool.take();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
     private static Connection open(){

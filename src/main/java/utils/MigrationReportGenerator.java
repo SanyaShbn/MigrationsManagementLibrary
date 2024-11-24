@@ -18,6 +18,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/** *
+ * This class is used for CSV and JSON migrations results reports generation
+ * */
 @Slf4j
 public class MigrationReportGenerator {
 
@@ -26,6 +29,11 @@ public class MigrationReportGenerator {
             FROM schema_history_table
             """;
 
+    /** *
+     * Generating CSV-reports of migrations results
+     *
+     * @param filePath report file creation directory path
+     * */
     public void generateCsvReport(String filePath) {
         try (Connection connection = ConnectionManager.get();
              Statement statement = connection.createStatement();
@@ -55,6 +63,11 @@ public class MigrationReportGenerator {
         }
     }
 
+    /** *
+     * Generating JSON-reports of migrations results
+     *
+     * @param filePath report file creation directory path
+     * */
     public void generateJsonReport(String filePath) {
         try (Connection connection = ConnectionManager.get();
              Statement statement = connection.createStatement();

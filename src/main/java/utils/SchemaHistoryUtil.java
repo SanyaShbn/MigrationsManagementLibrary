@@ -5,6 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static utils.Validator.checkNotNull;
+import static utils.Validator.checkNotNullMigrationAuthorAndDescription;
+
+/** *
+ * Utility class for managing Schema History table of migrations
+ * */
 public class SchemaHistoryUtil {
     private final static String CREATE_HISTORY_TABLE_SQL = """
             CREATE TABLE IF NOT EXISTS schema_history_table (
@@ -20,45 +26,36 @@ public class SchemaHistoryUtil {
                             status VARCHAR(50) DEFAULT 'applied'
                             );
             """;
-
-    private final static String CREATE_MIGRATION_LOCK_SQL = """
-            CREATE TABLE migration_lock (
-                id SERIAL PRIMARY KEY,
-                is_locked BOOLEAN NOT NULL DEFAULT FALSE
-            );
-            """;
-
     private final static String INSERT_INTO_HISTORY_TABLE_SQL = """
             INSERT INTO schema_history_table (version, description, script, checksum, installed_by, execution_time,
              success, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
-    private static void validateUpdateSchemaHistoryTableParams(Connection connection, Integer version, String description,
-                                                               String script, String installed_by){
-        Validator.checkNotNull(connection);
-        Validator.checkNotNull(version, "Provided db version");
-        Validator.checkNotNull(script, "Script");
-        Validator.checkNotNullMigrationAuthorAndDescription(installed_by, description);
-    }
-
-    //Создание таблицы schema_history_table для отслеживания истории миграций
+    /** *
+     * Creating a schema_history_table to track migration history
+     *
+     * @param connection opened connection to the database
+     * */
     public static void createSchemaHistoryTable(Connection connection) throws SQLException {
-        Validator.checkNotNull(connection);
+        checkNotNull(connection);
         try (Statement statement = connection.createStatement()) {
             statement.execute(CREATE_HISTORY_TABLE_SQL);
         }
     }
 
-    public static void createMigrationLockTable(Connection connection) throws SQLException {
-        Validator.checkNotNull(connection);
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(CREATE_MIGRATION_LOCK_SQL);
-            statement.execute("INSERT INTO migration_lock (is_locked) VALUES (FALSE) ON CONFLICT DO NOTHING");
-        }
-    }
-
-    //Внесение данных о новых миграциях в schema_history_table
+    /** *
+     * Entering data about new migrations into schema_history_table
+     *
+     * @param connection opened connection to the database
+     * @param version the version database is migrating to
+     * @param description migration's description got from file comments
+     * @param script file name
+     * @param installedBy author of the migration
+     * @param executionTime
+     * @param success defines whether migration was successfully applied
+     * @param status defines status of the migration (applied, rolled_back, ignored)
+     * */
     public static void updateSchemaHistoryTable(Connection connection, Integer version, String description,
                                                 String script, String installedBy, int executionTime,
                                                 boolean success, String status) throws SQLException {
@@ -74,5 +71,12 @@ public class SchemaHistoryUtil {
             preparedStatement.setString(8, status);
             preparedStatement.executeUpdate();
         }
+    }
+    private static void validateUpdateSchemaHistoryTableParams(Connection connection, Integer version, String description,
+                                                               String script, String installed_by){
+        checkNotNull(connection);
+        checkNotNull(version, "Provided db version");
+        checkNotNull(script, "Script");
+        checkNotNullMigrationAuthorAndDescription(installed_by, description);
     }
 }
