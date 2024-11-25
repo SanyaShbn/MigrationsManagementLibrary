@@ -64,33 +64,31 @@ public class RollbackExecutor implements Executor{
             connection.setAutoCommit(false);
 
             lockMigration(connection, true);
-            try {
-                int currentVersion = migrationManager.getCurrentVersion(connection);
-                if (targetVersion >= currentVersion) {
-                    log.error("Rollback failed. Target version must be less than current version");
-                    connection.rollback();
-                    lockMigration(connection, false);
-                    return;
-                }
 
-                for (File file : rollbackFiles) {
-                    Integer scriptVersion = migrationManager.extractVersionFromFilename(file);
-                    if (scriptVersion > targetVersion) {
-                        List<String> sqlCommands = migrationFileReader.readDbMigrationFile(file);
-                        if (!executeSqlWithCherryPick(connection, sqlCommands, file.getName(),
-                                scriptVersion, false)) {
-                            connection.rollback();
-                            lockMigration(connection, false);
-                            log.error("Rollback failed, rolling back all changes");
-                            return;
-                        }
+            int currentVersion = migrationManager.getCurrentVersion(connection);
+            if (targetVersion >= currentVersion) {
+                log.error("Rollback failed. Target version must be less than current version");
+                connection.rollback();
+                lockMigration(connection, false);
+                return;
+            }
+
+            for (File file : rollbackFiles) {
+                Integer scriptVersion = migrationManager.extractVersionFromFilename(file);
+                if (scriptVersion > targetVersion) {
+                    List<String> sqlCommands = migrationFileReader.readDbMigrationFile(file);
+                    if (!executeSqlWithCherryPick(connection, sqlCommands, file.getName(),
+                            scriptVersion, false)) {
+                        connection.rollback();
+                        lockMigration(connection, false);
+                        log.error("Rollback failed, rolling back all changes");
+                        return;
                     }
                 }
-                connection.commit();
-                log.info("Rollback executed successfully");
-            }finally {
-                lockMigration(connection, false);
             }
+            lockMigration(connection, false);
+            connection.commit();
+            log.info("Rollback executed successfully");
         }
         catch (SQLException | IllegalArgumentException e) {
             log.error("Error! Failed to rollback to version: ", e);
