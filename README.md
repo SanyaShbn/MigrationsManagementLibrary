@@ -9,7 +9,7 @@ To use this library in your project, you need to download the JAR file from the 
 ### **Step 1: Download the JAR file**
 
 Download the JAR file from the `lib` directory in the GitHub repository:
-[Download MigrationsManagementLibrary-1.0-SNAPSHOT.jar]()
+[Download MigrationsManagementLibrary-1.0-SNAPSHOT.jar](https://github.com/SanyaShbn/MigrationsManagementLibrary/blob/master/lib/MigrationsManagementLibrary-1.0-SNAPSHOT.jar)
 
 ### **Step 2: Install the JAR file in your local Maven repository**
 
