@@ -31,6 +31,7 @@ Add the following dependency to your pom.xml:
 </dependency>
 ```
 **Setting up Maven**
+
 If Maven is not installed on your machine, follow these steps to install and configure Maven:
 
 Download Maven:
