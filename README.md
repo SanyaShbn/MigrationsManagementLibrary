@@ -67,6 +67,7 @@ If you have done everything right, you should see the Maven version and other de
 It's preferred to place your migrations .sql files in the 'resources' directory of your project (but you can identify other external directories)
 
 *Don't forget to specify your database as the data source*
+
 *Attention! Notice that, for now, only PostgreSQL databases are supported by this library as a data source for applying migrations*
 
 After your data source is connected you have to create 'application.properties' file in 'resources' and put there the following data:
@@ -127,12 +128,10 @@ private final static String MIGRATIONS_DIRECTORY = "src/main/resources/db/rollba
     }
 }
 ```
-### Contributing
-We welcome contributions! Please open an issue or submit a pull request on GitHub.
 
-### CLI
+# CLI
 
-Provided CLI is a command-line tool for managing database migrations based on the developped ;ibrary. It uses the library to apply migrations, roll back migrations, and check the status of the database.
+Provided CLI is a command-line tool for managing database migrations based on the developped library. It uses the library to apply migrations, roll back migrations, and check the status of the database.
 
 ## Installation
 
@@ -146,12 +145,19 @@ Download the JAR file from the `cli` directory in the GitHub repository:
 ### Running the CLI
 
 To run the CLI, use the following command:
+
 ```
 java -jar path_to_your_file/CLI-db-migrations-utility-1.0-SNAPSHOT.jar
 ```
 
 You will be showed a menu and prompted to enter the database URL, username, password, and path to migration and rollback files. After that, you can choose an option to perform: 
+
+```
 'Migrate' - perform all the up to date migrations 
 'Rollback' - execute a rollback to the chosen version of your database
 'Status' - check status of the database (version and migrations with 'applied' status field value)
 'Exit' - exit from utility app
+```
+
+### Contributing
+We welcome contributions! Please open an issue or submit a pull request on GitHub.
