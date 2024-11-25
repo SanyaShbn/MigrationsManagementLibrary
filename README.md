@@ -138,7 +138,7 @@ Provided CLI is a command-line tool for managing database migrations based on th
 ### Step 1: Download the JAR file
 
 Download the JAR file from the `cli` directory in the GitHub repository:
-[Download MigrationsManagementLibrary-1.0-SNAPSHOT.jar](https://github.com/SanyaShbn/MigrationsManagementLibrary/blob/master/lib/MigrationsManagementLibrary-1.0-SNAPSHOT.jar)
+[Download CLI-db-migrations-utility-1.0-SNAPSHOT.jar](https://github.com/SanyaShbn/MigrationsManagementLibrary/blob/master/cli/CLI-db-migrations-utility-1.0-SNAPSHOT.jar)
 
 **Notice: it is necessary to complete step 1 and 2 of the 'Installation' guide part as well as set up Maven locally for proper work of this CLI utility**
 
