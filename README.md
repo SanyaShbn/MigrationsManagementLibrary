@@ -1,17 +1,17 @@
-# **MigrationsManagementLibrary**
+# MigrationsManagementLibrary
 
 MigrationsManagementLibrary is a library for managing database migrations. It is designed to be used in any Java application and includes features for applying migrations, rolling back migrations, cherry picking migrations and checking the status of the database as well as generating CSV/JSON migration results reports.
 
-## **Installation**
+## Installation
 
 To use this library in your project, you need to download the JAR file from the GitHub repository and install it in your local Maven repository.
 
-### **Step 1: Download the JAR file**
+### Step 1: Download the JAR file
 
 Download the JAR file from the `lib` directory in the GitHub repository:
 [Download MigrationsManagementLibrary-1.0-SNAPSHOT.jar](https://github.com/SanyaShbn/MigrationsManagementLibrary/blob/master/lib/MigrationsManagementLibrary-1.0-SNAPSHOT.jar)
 
-### **Step 2: Install the JAR file in your local Maven repository**
+### Step 2: Install the JAR file in your local Maven repository
 
 Open a terminal and run the following command:
 
@@ -21,7 +21,7 @@ mvn install:install-file -Dfile=path/to/your-jar-file/MigrationsManagementLibrar
 
 Replace 'path/to/your-jar-file' with the actual path to the downloaded JAR file.
 
-### **Step 3: Add the dependency to your project's pom.xml**
+### Step 3: Add the dependency to your project's pom.xml
 Add the following dependency to your pom.xml:
 ```
 <dependency>
@@ -59,7 +59,7 @@ mvn -version
 ```
 If you have done everything right, you should see the Maven version and other details.
 
-### **Usage**
+### Usage
 
 **Project environment**
 
@@ -126,5 +126,31 @@ private final static String MIGRATIONS_DIRECTORY = "src/main/resources/db/rollba
     }
 }
 ```
-### **Contributing**
+### Contributing
 We welcome contributions! Please open an issue or submit a pull request on GitHub.
+
+### CLI
+
+Provided CLI is a command-line tool for managing database migrations based on the developped ;ibrary. It uses the library to apply migrations, roll back migrations, and check the status of the database.
+
+## Installation
+
+### Step 1: Download the JAR file
+
+Download the JAR file from the `cli` directory in the GitHub repository:
+[Download MigrationsManagementLibrary-1.0-SNAPSHOT.jar](https://github.com/SanyaShbn/MigrationsManagementLibrary/blob/master/lib/MigrationsManagementLibrary-1.0-SNAPSHOT.jar)
+
+**Notice: it is necessary to complete step 1 and 2 of the 'Installation' guide part as well as set up Maven locally for proper work of this CLI utility**
+
+### Running the CLI
+
+To run the CLI, use the following command:
+```
+java -jar path_to_your_file/CLI-db-migrations-utility-1.0-SNAPSHOT.jar
+```
+
+You will be showed a menu and prompted to enter the database URL, username, password, and path to migration and rollback files. After that, you can choose an option to perform: 
+'Migrate' - perform all the up to date migrations 
+'Rollback' - execute a rollback to the chosen version of your database
+'Status' - check status of the database (version and migrations with 'applied' status field value)
+'Exit' - exit from utility app
