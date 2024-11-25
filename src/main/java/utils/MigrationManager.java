@@ -4,10 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import reader.MigrationFileReader;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -43,7 +40,7 @@ public class MigrationManager {
     /** *
      * Getting the current database version
      *
-     * @param connection the directory path for .sql files
+     * @param connection the connection to your database
      * @return version's number
      * */
     public Integer getCurrentVersion(Connection connection) {
@@ -100,6 +97,29 @@ public class MigrationManager {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Возвращает список применённых миграций.
+     *
+     * @param connection the connection to your database.
+     * @return list of applied migrations.
+     * @throws SQLException when database modification error occurs.
+     */
+    public List<String> getAppliedMigrations(Connection connection) throws SQLException {
+        List<String> appliedMigrations = new ArrayList<>();
+
+        String query = "SELECT script FROM schema_history_table WHERE status = 'applied' ORDER BY version ASC";
+        try (PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String migrationScript = resultSet.getString("script");
+                appliedMigrations.add(migrationScript);
+            }
+        }
+
+        return appliedMigrations;
     }
 
     private void validateFileFormat(List<File> files) {
