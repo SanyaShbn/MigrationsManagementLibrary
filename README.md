@@ -126,5 +126,5 @@ private final static String MIGRATIONS_DIRECTORY = "src/main/resources/db/rollba
     }
 }
 ```
-###**Contributing**
+### **Contributing**
 We welcome contributions! Please open an issue or submit a pull request on GitHub.
