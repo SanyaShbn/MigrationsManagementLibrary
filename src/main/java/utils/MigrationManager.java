@@ -100,7 +100,7 @@ public class MigrationManager {
     }
 
     /**
-     * Возвращает список применённых миграций.
+     * This method provides information about current database status.
      *
      * @param connection the connection to your database.
      * @return list of applied migrations.
